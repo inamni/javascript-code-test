@@ -13,6 +13,10 @@ export default class BookSearchService {
   format: SupportedFormats;
 
   constructor(format: SupportedFormats) {
+    if (format !== "json" && format !== "xml") {
+      throw new Error(`Unsupported format: ${format}`);
+    }
+
     this.format = format;
   }
 

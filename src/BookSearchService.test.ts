@@ -1,4 +1,4 @@
-import { it, expect } from "vitest";
+import { test, expect } from "vitest";
 import { http, HttpResponse } from "msw";
 import { server } from "./mocks/server";
 import BookignSearchService, {
@@ -17,7 +17,13 @@ const fakeData = {
   },
 };
 
-it("BookignSearchService.getBooksByAuthor sends the correct query params", async () => {
+test("BookignSearchService constructor throws on unsupported format", () => {
+  expect(
+    () => new BookignSearchService("unsupported" as SupportedFormats)
+  ).toThrow("Unsupported format: unsupported");
+});
+
+test("BookignSearchService.getBooksByAuthor sends the correct query params", async () => {
   let queryParams;
 
   const client = new BookignSearchService("json");
@@ -46,7 +52,7 @@ it("BookignSearchService.getBooksByAuthor sends the correct query params", async
   });
 });
 
-it.each([["json"], ["xml"]])(
+test.each([["json"], ["xml"]])(
   "BookignSearchService.getBooksByAuthor should return list of books by author in %s format",
   async (format) => {
     const client = new BookignSearchService(format as SupportedFormats);
@@ -96,7 +102,7 @@ it.each([["json"], ["xml"]])(
   }
 );
 
-it("BookignSearchService.getBooksByAuthor should handle errors", async () => {
+test("BookignSearchService.getBooksByAuthor should handle errors", async () => {
   const client = new BookignSearchService("json");
 
   server.use(
