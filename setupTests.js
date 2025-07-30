@@ -12,6 +12,3 @@ afterEach(() => server.resetHandlers());
 
 // Clean up after the tests are finished
 afterAll(() => server.close());
-
-// Reset handlers after each test `important for test isolation`
-afterEach(() => server.resetHandlers());
