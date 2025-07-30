@@ -1,10 +1,5 @@
 import { test, describe, expect } from "vitest";
-import {
-  http,
-  HttpResponse,
-  type HttpRequestHandler,
-  type HttpResponseResolver,
-} from "msw";
+import { http, HttpResponse, type HttpResponseResolver } from "msw";
 import { server } from "./mocks/server";
 import BookignSearchService, {
   type SupportedFormats,
@@ -24,7 +19,7 @@ const fakeData = {
 
 test("constructor throws on unsupported format", () => {
   expect(
-    () => new BookignSearchService("unsupported" as SupportedFormats)
+    () => new BookignSearchService("unsupported" as SupportedFormats),
   ).toThrow("Unsupported format: unsupported");
 });
 
@@ -66,7 +61,7 @@ describe.each([
       });
 
       await expect(
-        client.getBooksByAuthor({ authorName: "Hemingway", limit: 10 })
+        client.getBooksByAuthor({ authorName: "Hemingway", limit: 10 }),
       ).resolves.not.toBeUndefined();
 
       expect(queryParams).toEqual({
@@ -83,7 +78,7 @@ describe.each([
       apiSetupHelper(() => HttpResponse.text(testData));
 
       await expect(
-        client.getBooksByAuthor({ authorName: "John Doe", limit: 10 })
+        client.getBooksByAuthor({ authorName: "John Doe", limit: 10 }),
       ).resolves.toEqual([
         {
           title: fakeData.book.title,
@@ -99,11 +94,11 @@ describe.each([
       const client = new BookignSearchService(format);
 
       apiSetupHelper(() =>
-        HttpResponse.json({ error: "Not Found" }, { status: 404 })
+        HttpResponse.json({ error: "Not Found" }, { status: 404 }),
       );
 
       await expect(
-        client.getBooksByAuthor({ authorName: "Unknown Author", limit: 5 })
+        client.getBooksByAuthor({ authorName: "Unknown Author", limit: 5 }),
       ).rejects.toThrow("Request failed with status 404");
     });
 
@@ -113,14 +108,14 @@ describe.each([
       apiSetupHelper(() => HttpResponse.text("Unexpected response format"));
 
       await expect(
-        client.getBooksByAuthor({ authorName: "Unknown Author", limit: 5 })
+        client.getBooksByAuthor({ authorName: "Unknown Author", limit: 5 }),
       ).rejects.toThrow();
     });
-  }
+  },
 );
 
 function apiSetupHelper(handler: HttpResponseResolver) {
   server.use(
-    http.get("http://api.book-seller-example.com/by-author*", handler)
+    http.get("http://api.book-seller-example.com/by-author*", handler),
   );
 }

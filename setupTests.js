@@ -1,7 +1,5 @@
-import { beforeAll, afterEach, afterAll, vi } from "vitest";
+import { beforeAll, afterEach, afterAll } from "vitest";
 import { server } from "./src/mocks/server";
-
-window.alert = vi.fn(); // Mock alert function
 
 // Start the server before all tests
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }));

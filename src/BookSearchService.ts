@@ -23,7 +23,7 @@ export interface Book {
   isbn: BookResponse["book"]["isbn"];
   quantity: BookResponse["stock"]["quantity"];
   price: BookResponse["stock"]["price"];
-};
+}
 
 export default class BookSearchService {
   domain = "http://api.book-seller-example.com";
@@ -83,7 +83,7 @@ export default class BookSearchService {
           books: z.array(
             z.object({
               item: z.array(BookResponseSchema),
-            })
+            }),
           ),
         })
         .parse(rawXml);
@@ -95,7 +95,7 @@ export default class BookSearchService {
           isbn: item.book.isbn,
           quantity: item.stock.quantity,
           price: item.stock.price,
-        }))
+        })),
       );
     } else {
       throw new Error(`Unsupported format: ${this.format}`);
