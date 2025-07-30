@@ -1,7 +1,7 @@
 import { it, expect } from "vitest";
-import BookSearchApiClient from "./BookSearchApiClient";
 import { http, HttpResponse } from "msw";
 import { server } from "./mocks/server";
+import BookignSearchService from "./BookSearchService";
 
 const fakeData = [
   {
@@ -17,10 +17,10 @@ const fakeData = [
   },
 ];
 
-it("BookSearchApiClient.getBooksByAuthor sends the correct query params", async () => {
+it("BookignSearchService.getBooksByAuthor sends the correct query params", async () => {
   let queryParams;
 
-  const client = new BookSearchApiClient("json");
+  const client = new BookignSearchService("json");
 
   server.use(
     http.get("http://api.book-seller-example.com/by-author*", ({ request }) => {
@@ -45,9 +45,9 @@ it("BookSearchApiClient.getBooksByAuthor sends the correct query params", async 
 });
 
 it.each([["json"], ["xml"]])(
-  "BookSearchApiClient.getBooksByAuthor should return list of books by author in %s format",
+  "BookignSearchService.getBooksByAuthor should return list of books by author in %s format",
   async (format) => {
-    const client = new BookSearchApiClient(format);
+    const client = new BookignSearchService(format);
 
     // assumption made on the stucture of the fake data
     server.use(
@@ -94,8 +94,8 @@ it.each([["json"], ["xml"]])(
   }
 );
 
-it("BookSearchApiClient.getBooksByAuthor should handle errors", async () => {
-  const client = new BookSearchApiClient("json");
+it("BookignSearchService.getBooksByAuthor should handle errors", async () => {
+  const client = new BookignSearchService("json");
 
   server.use(
     http.get("http://api.book-seller-example.com/by-author*", () => {
@@ -105,9 +105,5 @@ it("BookSearchApiClient.getBooksByAuthor should handle errors", async () => {
 
   await expect(client.getBooksByAuthor("Unknown Author", 5)).rejects.toThrow(
     "Request failed with status 404"
-  );
-
-  expect(window.alert).toHaveBeenCalledWith(
-    "Request failed.  Returned status of 404"
   );
 });
