@@ -1,17 +1,36 @@
+import { XMLParser } from "fast-xml-parser";
+import { z } from "zod";
+
 export type SupportedFormats = "json" | "xml";
 
+const BookResponseSchema = z.object({
+  book: z.object({
+    title: z.string(),
+    author: z.string(),
+    isbn: z.coerce.number(),
+  }),
+  stock: z.object({
+    quantity: z.coerce.number(),
+    price: z.coerce.number(),
+  }),
+});
+
+type BookResponse = z.infer<typeof BookResponseSchema>;
+
 export interface Book {
-  title: string;
-  author: string;
-  isbn: string;
-  quantity: number;
-  price: number;
-}
+  title: BookResponse["book"]["title"];
+  author: BookResponse["book"]["author"];
+  isbn: BookResponse["book"]["isbn"];
+  quantity: BookResponse["stock"]["quantity"];
+  price: BookResponse["stock"]["price"];
+};
 
 export default class BookSearchService {
   domain = "http://api.book-seller-example.com";
   format: SupportedFormats;
 
+  // future enhancement: should more formats require to be support will be good to remove logic from here and use a factory pattern
+  // or a strategy pattern to handle different formats
   constructor(format: SupportedFormats) {
     if (format !== "json" && format !== "xml") {
       throw new Error(`Unsupported format: ${format}`);
@@ -25,6 +44,7 @@ export default class BookSearchService {
     limit,
   }: {
     authorName: string;
+    // asumption: limit here is a required param - however this could be optional
     limit: number;
   }): Promise<Book[]> {
     const url = new URL(`${this.domain}/by-author`);
@@ -43,8 +63,9 @@ export default class BookSearchService {
 
     if (this.format === "json") {
       const json = JSON.parse(raw);
+      const parsedData = z.array(BookResponseSchema).parse(json);
 
-      return json.map((item: any) => ({
+      return parsedData.map((item) => ({
         title: item.book.title,
         author: item.book.author,
         isbn: item.book.isbn,
@@ -52,27 +73,30 @@ export default class BookSearchService {
         price: item.stock.price,
       }));
     } else if (this.format === "xml") {
-      const parser = new DOMParser();
-      const xml = parser.parseFromString(raw, "application/xml");
+      const parser = new XMLParser({
+        isArray: (name) => ["books", "item"].includes(name),
+      });
+      const rawXml = parser.parse(raw);
 
-      // Note: will require some sort of schema validation in a real-world scenario
-      return Array.from(xml.documentElement.children).map((item) => {
-        const book = item.getElementsByTagName("book")[0];
-        const stock = item.getElementsByTagName("stock")[0];
+      const parsedData = z
+        .object({
+          books: z.array(
+            z.object({
+              item: z.array(BookResponseSchema),
+            })
+          ),
+        })
+        .parse(rawXml);
 
-        return {
-          title: book?.getElementsByTagName("title")[0]?.textContent,
-          author: book?.getElementsByTagName("author")[0]?.textContent,
-          isbn: book?.getElementsByTagName("isbn")[0]?.textContent,
-          quantity: parseInt(
-            stock?.getElementsByTagName("quantity")[0]?.textContent || "",
-            10
-          ),
-          price: parseFloat(
-            stock?.getElementsByTagName("price")[0]?.textContent || ""
-          ),
-        };
-      }) as Book[];
+      return parsedData.books.flatMap((bookItem) =>
+        bookItem.item.map((item) => ({
+          title: item.book.title,
+          author: item.book.author,
+          isbn: item.book.isbn,
+          quantity: item.stock.quantity,
+          price: item.stock.price,
+        }))
+      );
     } else {
       throw new Error(`Unsupported format: ${this.format}`);
     }
