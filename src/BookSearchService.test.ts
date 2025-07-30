@@ -1,21 +1,21 @@
 import { it, expect } from "vitest";
 import { http, HttpResponse } from "msw";
 import { server } from "./mocks/server";
-import BookignSearchService from "./BookSearchService";
+import BookignSearchService, {
+  type SupportedFormats,
+} from "./BookSearchService";
 
-const fakeData = [
-  {
-    book: {
-      title: "random title",
-      author: "random author",
-      isbn: "1234567890",
-    },
-    stock: {
-      quantity: 10,
-      price: 1000,
-    },
+const fakeData = {
+  book: {
+    title: "random title",
+    author: "random author",
+    isbn: "1234567890",
   },
-];
+  stock: {
+    quantity: 10,
+    price: 1000,
+  },
+};
 
 it("BookignSearchService.getBooksByAuthor sends the correct query params", async () => {
   let queryParams;
@@ -35,7 +35,9 @@ it("BookignSearchService.getBooksByAuthor sends the correct query params", async
     })
   );
 
-  await expect(client.getBooksByAuthor("Hemingway", 10)).resolves.toEqual([]); // Assuming you await or return a promise
+  await expect(
+    client.getBooksByAuthor({ authorName: "Hemingway", limit: 10 })
+  ).resolves.toEqual([]); // Assuming you await or return a promise
 
   expect(queryParams).toEqual({
     q: "Hemingway",
@@ -47,7 +49,7 @@ it("BookignSearchService.getBooksByAuthor sends the correct query params", async
 it.each([["json"], ["xml"]])(
   "BookignSearchService.getBooksByAuthor should return list of books by author in %s format",
   async (format) => {
-    const client = new BookignSearchService(format);
+    const client = new BookignSearchService(format as SupportedFormats);
 
     // assumption made on the stucture of the fake data
     server.use(
@@ -58,37 +60,37 @@ it.each([["json"], ["xml"]])(
           const format = searchParms.get("format");
 
           if (format === "xml") {
-            const xml = `<books>${fakeData
-              .map(
-                (item) => `<item>
-          <book>
-            <title>${item.book.title}</title>
-            <author>${item.book.author}</author>
-            <isbn>${item.book.isbn}</isbn>
-          </book>
-          <stock>
-            <quantity>${item.stock.quantity}</quantity>
-            <price>${item.stock.price}</price>
-          </stock>
-        </item>`
-              )
-              .join("")}</books>`.trim();
+            const xml = `<books>
+              <item>
+                <book>
+                  <title>${fakeData.book.title}</title>
+                  <author>${fakeData.book.author}</author>
+                  <isbn>${fakeData.book.isbn}</isbn>
+                </book>
+                <stock>
+                  <quantity>${fakeData.stock.quantity}</quantity>
+                  <price>${fakeData.stock.price}</price>
+                </stock>
+              </item>
+            </books>`.trim();
 
             return HttpResponse.xml(xml);
           }
 
-          return HttpResponse.json(fakeData);
+          return HttpResponse.json([fakeData]);
         }
       )
     );
 
-    await expect(client.getBooksByAuthor("John Doe", 10)).resolves.toEqual([
+    await expect(
+      client.getBooksByAuthor({ authorName: "John Doe", limit: 10 })
+    ).resolves.toEqual([
       {
-        title: fakeData[0].book.title,
-        author: fakeData[0].book.author,
-        isbn: fakeData[0].book.isbn,
-        quantity: fakeData[0].stock.quantity,
-        price: fakeData[0].stock.price,
+        title: fakeData.book.title,
+        author: fakeData.book.author,
+        isbn: fakeData.book.isbn,
+        quantity: fakeData.stock.quantity,
+        price: fakeData.stock.price,
       },
     ]);
   }
@@ -103,7 +105,7 @@ it("BookignSearchService.getBooksByAuthor should handle errors", async () => {
     })
   );
 
-  await expect(client.getBooksByAuthor("Unknown Author", 5)).rejects.toThrow(
-    "Request failed with status 404"
-  );
+  await expect(
+    client.getBooksByAuthor({ authorName: "Unknown Author", limit: 5 })
+  ).rejects.toThrow("Request failed with status 404");
 });
